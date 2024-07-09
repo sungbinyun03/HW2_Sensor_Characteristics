@@ -1,4 +1,3 @@
-import rawpy
 import numpy as np
 import glob
 import cv2
@@ -23,7 +22,8 @@ def crop(imgs, xDimMin, xDimMax, yDimMin, yDimMax):
     returns:
         images (np.ndarray): cropped version of all the images
     """
-    raise NotImplementedError
+    return imgs[xDimMin:xDimMax, yDimMin:yDimMax, ...]
+
 
 def channel_filter(imgs):
     """
@@ -54,4 +54,12 @@ def channel_filter(imgs):
         filteredImages(np.ndarray): filtered version of the image, whose dimensions are 
         (X,Y, RGB, timestamp of image)
     """
-    raise NotImplementedError
+    red_channel = imgs[1::2, 1::2, :, :]  # Every second pixel in every second row
+    green_channel2 = imgs[1::2, 0::2, :, :]  # Every second pixel starting from the second row
+    blue_channel = imgs[0::2, 0::2, :, :]  # Every second pixel starting from the first row and column
+
+
+    # Stack the channels along the RGB axis
+    filteredImages = np.stack((red_channel, green_channel2, blue_channel), axis=2)
+
+    return filteredImages

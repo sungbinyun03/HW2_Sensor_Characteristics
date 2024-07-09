@@ -39,7 +39,21 @@ def load_data(folder,numImages=200,height=600,width=800):
     returns:
         imgs (np.array): The 200 images as monochromatic images in uint8 type format
     """
-    raise NotImplementedError
+    folder_path = os.path.join('pic', 'HW2_Data', folder)
+    
+    raw_files = glob.glob(os.path.join(folder_path, '*.Raw'))
+    
+    raw_files = raw_files[:numImages]
+    print(f"Looking for .Raw files in: {folder_path}")
+    print(f"Number of .Raw files found: {len(raw_files)}")
+    imgs = np.zeros((height, width, len(raw_files)), dtype=np.uint8)
+
+    for i, raw_file in enumerate(raw_files):
+        img = np.fromfile(raw_file, dtype=np.uint8)
+        img = img.reshape((height, width))
+        imgs[:, :, i] = img
+    
+    return imgs
 
 def load_dataset():
     """
@@ -55,4 +69,16 @@ def load_dataset():
         sensitivy (np.array): A numpy array containing [0,1,3,9,14,18]
     
     """
-    raise NotImplementedError
+    sensitivities = [0, 1, 3, 9, 14, 18]
+    dark = np.zeros((600, 800, 200, len(sensitivities)), dtype=np.uint8)
+    imgs = np.zeros((600, 800, 200, len(sensitivities)), dtype=np.uint8)
+    
+    for i, sensitivity in enumerate(sensitivities):
+        dark_folder = f'dark{sensitivity}'
+        white_folder = f'gain{sensitivity}'
+        dark[:, :, :, i] = load_data(dark_folder)
+        imgs[:, :, :, i] = load_data(white_folder)
+    
+    sensitivity_array = np.array(sensitivities)
+    
+    return dark, imgs, sensitivity_array

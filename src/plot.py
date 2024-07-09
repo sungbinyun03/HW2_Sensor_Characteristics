@@ -1,4 +1,3 @@
-import rawpy
 import numpy as np
 import glob
 import cv2
@@ -36,7 +35,19 @@ def plot_input_histogram(imgs,sensitivity):
         imgs(np.ndarray): 3-dimensional array containing one image per intensity setting (not all the 200)
     
     """
-    raise NotImplementedError
+    num_sensitivity = imgs.shape[2]
+    
+    fig, axes = plt.subplots(1,  num_sensitivity, figsize=(30, 5))
+    
+    for i in range(num_sensitivity):
+        ax = axes[i]
+        ax.hist(imgs[:, :, i].ravel(), bins=256, alpha=0.5, range=(0, 255))
+        ax.set_title(f'Sensitivity Lvl {sensitivity[i]}')
+        ax.set_ylabel('Count')
+        ax.grid(True)
+    
+    axes[-1].set_xlabel('Intensity')
+    plt.tight_layout()
         
 def plot_histograms_channels(img,sensitivity):
     """
@@ -49,7 +60,19 @@ def plot_histograms_channels(img,sensitivity):
     
     """
     
-    raise NotImplementedError
+    fig, axes = plt.subplots(1, 3, figsize=(15, 2.5))
+    
+    channels = ['Red', 'Green', 'Blue']
+    for i, (channel, ax) in enumerate(zip(channels, axes)):
+        ax.hist(img[:, :, i].ravel(), bins=50, alpha=0.5, range=(0, 255))
+        ax.set_title(f'{channel} Channel')
+        ax.set_xlabel('Intensity')
+        ax.set_ylabel('Count')
+        ax.grid(True)
+    
+    fig.suptitle(f'Histograms for Sensitivity lvl = {sensitivity}')
+    plt.tight_layout()
+
         
 def plot_input_images(imgs,sensitivity):
     """
@@ -64,10 +87,41 @@ def plot_input_images(imgs,sensitivity):
         sensitivity(np.ndarray): The sensitivy (gain) vector for the image database
     
     """
-    raise NotImplementedError
+    num_sensitivity = imgs.shape[2]
+    fig, axes = plt.subplots(1, num_sensitivity, figsize=(20, 5))
+    
+    for i in range(num_sensitivity):
+        plt.sca(axes[i])
+        plot_with_colorbar(imgs[:, :, i], vmax=255)
+        axes[i].set_title(f'Sensitivity: {sensitivity[i]}')
+        axes[i].axis('off')
+    
+    plt.tight_layout()
+
+
+
 
 def plot_rgb_channel(img, sensitivity):
-    raise NotImplementedError
+    fig, axes = plt.subplots(1, 3, figsize=(20, 11))
+    
+    vmax_r = img[:, :, 0].max()
+    vmax_g = img[:, :, 1].max()
+    vmax_b = img[:, :, 2].max()
+    
+    plt.sca(axes[0])
+    plot_with_colorbar(img[:, :, 0], vmax=vmax_r)
+    axes[0].set_title('Red Channel')
+    
+    plt.sca(axes[1])
+    plot_with_colorbar(img[:, :, 1], vmax=vmax_g)
+    axes[1].set_title('Green Channel')
+    
+    plt.sca(axes[2])
+    plot_with_colorbar(img[:, :, 2], vmax=vmax_b)
+    axes[2].set_title('Blue Channel')
+    
+    fig.suptitle(f'Sensitivity: {sensitivity}', y = .75)
+    plt.tight_layout()
 
 def plot_images(data, sensitivity, statistic,color_channel):
     """
@@ -87,7 +141,18 @@ def plot_images(data, sensitivity, statistic,color_channel):
         void, but show the plots!
 
     """
-    raise NotImplementedError
+    num_sensitivities = data.shape[3]
+    
+    plt.figure(figsize=(20, 10))
+    for i in range(num_sensitivities):
+        plt.subplot(2, 3, i+1)
+        plt.title(f'Sensitivity {sensitivity[i]} - {statistic}')
+        plot_with_colorbar(data[:, :, color_channel, i])
+
+    
+    plt.suptitle(f'Images - Color Channel {["red", "green", "blue"][color_channel]}', y = .9)
+    # plt.tight_layout()
+    plt.show()
     
     
 def plot_relations(means, variances, skip_pixel, sensitivity, color_idx):
@@ -106,7 +171,20 @@ def plot_relations(means, variances, skip_pixel, sensitivity, color_idx):
     returns:
         void, but show plots!
     """
-    raise NotImplementedError
+    plt.figure(figsize=(20, 5))
+    
+    for i, sens in enumerate(sensitivity):
+        plt.subplot(1, 6, i+1)
+        plt.scatter(means[::skip_pixel, ::skip_pixel, color_idx, i].ravel(),
+                    variances[::skip_pixel, ::skip_pixel, color_idx, i].ravel(), alpha=0.5)
+        plt.xlabel('Mean Intensity')
+        plt.ylabel('Variance')
+        plt.title(f'Sensitivity {sens}')
+        plt.grid(True)
+    
+    plt.suptitle(f'Mean vs Variance - Color Channel {["red", "green", "blue"][color_idx]}')
+    plt.tight_layout()
+    plt.show()
         
 def plot_mean_variance_with_linear_fit(gain,delta,means,variances,skip_points=50,color_channel=0):
     """
@@ -130,7 +208,25 @@ def plot_mean_variance_with_linear_fit(gain,delta,means,variances,skip_points=50
     returns:
         void, but show plots!
     """
-    raise NotImplementedError
+    num_sensitivities = means.shape[3]
+    
+    plt.figure(figsize=(20, 5))
+    
+    for i in range(num_sensitivities):
+        plt.subplot(1, 6, i+1)
+        plt.scatter(means[::skip_points, ::skip_points, color_channel, i].ravel(),
+                    variances[::skip_points, ::skip_points, color_channel, i].ravel(), alpha=0.5)
+        x_vals = np.linspace(0, np.max(means[:, :, color_channel, i]), 100)
+        y_vals = gain[color_channel, i] * x_vals + delta[color_channel, i]
+        plt.plot(x_vals, y_vals, color='red')
+        plt.xlabel('Mean Intensity')
+        plt.ylabel('Variance')
+        plt.title(f'Gain = {round(gain[color_channel, i], 3)} | Delta = {round(delta[color_channel, i], 3)}')
+        plt.grid(True)
+    
+    plt.suptitle(f'Mean vs Variance with Linear Fit | Color Channel = {["red", "green", "blue"][color_channel]}')
+    plt.tight_layout()
+    plt.show()
     
 def plot_read_noise_fit(sigma_read, sigma_ADC, gain, delta, color_channel=0):
     """
@@ -150,5 +246,18 @@ def plot_read_noise_fit(sigma_read, sigma_ADC, gain, delta, color_channel=0):
     returns:
         void, but show plots!
     """
+    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(10, 6))
+    plt.scatter(gain[color_channel, :], delta[color_channel, :], alpha=0.5, label='Data points')
     
-    raise NotImplementedError
+    x_vals = np.linspace(0, np.max(gain[color_channel, :]), 100)
+    y_vals = sigma_read[color_channel] * x_vals**2 + sigma_ADC[color_channel]
+    plt.plot(x_vals, y_vals, color='red', label='Linear fit')
+    
+    plt.xlabel('Gain (g)')
+    plt.ylabel('Read Noise')
+    plt.title(f'Read Noise Fit | Color Channel = {["red", "green", "blue"][color_channel]}')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
